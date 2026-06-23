@@ -23,6 +23,16 @@ export const PostActionsBar = ({post}: PostActionsBarProps) => {
 		return <BookmarkButton initialIsBookmarked={post.isBookmarked} colors={colors} />;
 	});
 
+	const MemoizedShareButton = memo(() => {
+		return <ShareButton
+			postId={post.id}
+			username={post.user.username}
+			colors={colors}
+			onShareComplete={() =>
+					setShareCount((prevShareCount) => prevShareCount + 1)}
+		/>
+	})
+
 	const onLike = () => {
     setIsLiked((prevIsLiked) => {
       const nextIsLiked = !prevIsLiked;
@@ -46,13 +56,7 @@ export const PostActionsBar = ({post}: PostActionsBarProps) => {
 			>
 				<View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
 					<LikeButton isLiked={isLiked} colors={colors} onPress={onLike} />
-					<ShareButton
-						postId={post.id}
-						username={post.user.username}
-						colors={colors}
-						onShareComplete={() =>
-								setShareCount((prevShareCount) => prevShareCount + 1)}
-					/>
+					<MemoizedShareButton />
 				</View>
 				<MemoizedBookmarkButton />
 			</View>
