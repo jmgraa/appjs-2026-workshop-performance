@@ -1,6 +1,6 @@
 import { Text, View, TouchableOpacity } from 'react-native'
 import { useRouter } from "expo-router";
-import { useContext, useState, memo } from 'react';
+import { useContext, useState, memo, useCallback } from 'react';
 
 import { ColorsContext } from '@/context/colors-context';
 import { FeedPost } from '@/data/mock-feed';
@@ -13,6 +13,7 @@ interface PostActionsBarProps {
 }
 
 const MemoizedBookmarkButton = memo(BookmarkButton);
+const MemoizedShareButton = memo(ShareButton);
 
 export const PostActionsBar = ({post}: PostActionsBarProps) => {
 	const colors = useContext(ColorsContext);
@@ -31,6 +32,10 @@ export const PostActionsBar = ({post}: PostActionsBarProps) => {
     });
   };
 
+	const onShareComplete = useCallback(() => {
+		setShareCount((prevShareCount) => prevShareCount + 1);
+	}, []);
+
 	return (
 		<>
 			<View
@@ -44,13 +49,11 @@ export const PostActionsBar = ({post}: PostActionsBarProps) => {
 			>
 				<View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
 					<LikeButton isLiked={isLiked} colors={colors} onPress={onLike} />
-					<ShareButton
+					<MemoizedShareButton
 						postId={post.id}
 						username={post.user.username}
 						colors={colors}
-						onShareComplete={() =>
-								setShareCount((prevShareCount) => prevShareCount + 1)}
-					/>
+						onShareComplete={onShareComplete} />
 				</View>
 				<MemoizedBookmarkButton initialIsBookmarked={post.isBookmarked} colors={colors} />
 			</View>
