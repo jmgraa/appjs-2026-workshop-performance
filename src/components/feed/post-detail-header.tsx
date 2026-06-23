@@ -14,29 +14,32 @@ import { formatRelativeTime } from "@/utils/feed-utils";
 
 interface PostDetailHeaderProps {
   post: FeedPost;
-  isLiked: boolean;
-  likesCount: number;
-  shareCount: number;
   commentsCount: number;
   hasNewComments: boolean;
-  onLike: () => void;
-  onShareComplete: () => void;
 }
 
 export const PostDetailHeader = ({
   post,
-  isLiked,
-  likesCount,
-  shareCount,
   commentsCount,
   hasNewComments,
-  onLike,
-  onShareComplete
 }: PostDetailHeaderProps) => {
   const colors = useContext(ColorsContext);
   const router = useRouter();
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | undefined>();
+  const [isLiked, setIsLiked] = useState(post.isLiked);
+  const [likesCount, setLikesCount] = useState(post.likes);
+  const [shareCount, setShareCount] = useState(0);
+
+  const onLike = () => {
+    setIsLiked((prevIsLiked) => {
+      const nextIsLiked = !prevIsLiked;
+      setLikesCount(
+        (prevLikesCount) => prevLikesCount + (nextIsLiked ? 1 : -1),
+      );
+      return nextIsLiked;
+    });
+  };
 
   return (
     <View>
@@ -109,7 +112,8 @@ export const PostDetailHeader = ({
             postId={post.id}
             username={post.user.username}
             colors={colors}
-            onShareComplete={() => onShareComplete()}
+            onShareComplete={() =>
+                setShareCount((prevShareCount) => prevShareCount + 1)}
           />
         </View>
         <BookmarkButton initialIsBookmarked={post.isBookmarked} colors={colors} />
