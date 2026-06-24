@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect, useCallback, useRef, useTransition } from "react";
+import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue, useMemo } from "react";
 import {
   View,
   Text,
@@ -42,8 +42,9 @@ const PostDetailScreen = () => {
   const [replyInfo, setReplyInfo] = useState<ReplyInfo | null>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-  const [isPending, startTransition] = useTransition();
+  // const [isPending, startTransition] = useTransition();
   const [relatedPosts, setRelatedPosts] = useState<RelatedPostResult[]>([]);
+  const deferredPost = useDeferredValue(post, null);
 
   useEffect(() => {
     const foundPost = findPostForDetails(id);
@@ -53,17 +54,25 @@ const PostDetailScreen = () => {
     }
   }, [id]);
 
-  useEffect(() => {
-    if (!post) {
-      setRelatedPosts([]);
-      return;
-    }
+  // useEffect(() => {
+  //   if (!post) {
+  //     setRelatedPosts([]);
+  //     return;
+  //   }
 
-    startTransition(() => {
-      const results = findRelatedPosts(post);
-      setRelatedPosts(results);
-    });
-  }, [post]);
+  //   startTransition(() => {
+  //     const results = findRelatedPosts(post);
+  //     setRelatedPosts(results);
+  //   });
+  // }, [post]);
+
+  useEffect(() => {
+    if (deferredPost) {
+      setRelatedPosts(findRelatedPosts(deferredPost));
+    }
+  }, [deferredPost]);
+
+  const isPending = post !== deferredPost;
 
   const hasNewComments = comments.length > prevCommentsLengthRef.current;
   prevCommentsLengthRef.current = comments.length;
