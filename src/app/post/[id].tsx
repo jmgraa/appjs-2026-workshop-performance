@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useTransition } from "react";
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import { detectSpam } from "@/utils/spam-detection";
 
 import { CommentInput } from "@/components/feed/comment-input";
 import { CommentItem } from "@/components/feed/comments/comment-item";
-import { findRelatedPosts } from "@/utils/related-posts";
+import { findRelatedPosts, RelatedPostResult } from "@/utils/related-posts";
 
 interface ReplyInfo {
   commentId: string;
@@ -42,6 +42,8 @@ const PostDetailScreen = () => {
   const [replyInfo, setReplyInfo] = useState<ReplyInfo | null>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
+  const [isPending, startTransition] = useTransition();
+  const [relatedPosts, setRelatedPosts] = useState<RelatedPostResult[]>([]);
 
   useEffect(() => {
     const foundPost = findPostForDetails(id);
@@ -51,12 +53,20 @@ const PostDetailScreen = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (!post) {
+      setRelatedPosts([]);
+      return;
+    }
+
+    startTransition(() => {
+      const results = findRelatedPosts(post);
+      setRelatedPosts(results);
+    });
+  }, [post]);
+
   const hasNewComments = comments.length > prevCommentsLengthRef.current;
   prevCommentsLengthRef.current = comments.length;
-
-  const relatedPosts = useMemo(() => {
-    return post ? findRelatedPosts(post) : [];
-  }, [post]);
 
   const handleReply = useCallback((commentId: string, username: string) => {
     setReplyInfo({ commentId, username });
@@ -210,7 +220,10 @@ const PostDetailScreen = () => {
             </View>
           }
           ListFooterComponent={
-            relatedPosts.length > 0 ? (
+            isPending ?
+              <Text style={{ color: colors.icon, fontSize: 14 }}>
+                Loading related posts...
+              </Text> : (relatedPosts.length > 0 ? (
               <View
                 style={{
                   paddingTop: 16,
@@ -273,7 +286,7 @@ const PostDetailScreen = () => {
                   )}
                 />
               </View>
-            ) : null
+            ) : null)
           }
         />
 
