@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect, useCallback, useRef, useTransition } from "react";
+import { useState, useEffect, useCallback, useRef, useDeferredValue, useMemo, /* useTransition */ } from "react";
 import {
   View,
   Text,
@@ -34,8 +34,17 @@ const RelatedPosts = ({post}: {post: FeedPost}) => {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-  const relatedPosts = findRelatedPosts(post);
+  // const relatedPosts = findRelatedPosts(post);
+  const deferredPost = useDeferredValue(post, null);
   const isPending = false;
+
+  const relatedPosts = useMemo(() => {
+    if (deferredPost){
+      return findRelatedPosts(deferredPost)
+    }
+
+    return [];
+  }, [deferredPost])
 
   return (
     isPending ?
@@ -120,8 +129,8 @@ const PostDetailScreen = () => {
   const [replyInfo, setReplyInfo] = useState<ReplyInfo | null>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-  const [_, startTransition] = useTransition();
-  const [showRelatedPosts, setShowRelatedPosts] = useState(false);
+  // const [_, startTransition] = useTransition();
+  // const [showRelatedPosts, setShowRelatedPosts] = useState(false);
 
   useEffect(() => {
     const foundPost = findPostForDetails(id);
@@ -131,11 +140,11 @@ const PostDetailScreen = () => {
     }
   }, [id]);
 
-  useEffect(() => {
-   startTransition(() => {
-      setShowRelatedPosts(true);
-    });
-  }, []);
+  // useEffect(() => {
+  //  startTransition(() => {
+  //     setShowRelatedPosts(true);
+  //   });
+  // }, []);
 
   const hasNewComments = comments.length > prevCommentsLengthRef.current;
   prevCommentsLengthRef.current = comments.length;
@@ -291,7 +300,7 @@ const PostDetailScreen = () => {
               </Text>
             </View>
           }
-          ListFooterComponent={showRelatedPosts && post ? <RelatedPosts post={post} /> : null}
+          ListFooterComponent={/* showRelatedPosts && */ post ? <RelatedPosts post={post} /> : null}
         />
 
         {/* Reply indicator */}
