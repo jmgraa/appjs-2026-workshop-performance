@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useTransition } from "react";
 import {
   View,
   Text,
@@ -30,6 +30,84 @@ interface ReplyInfo {
   username: string;
 }
 
+const RelatedPosts = ({post}: {post: FeedPost}) => {
+  const router = useRouter();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
+  const relatedPosts = findRelatedPosts(post);
+  const isPending = false;
+
+  return (
+    isPending ?
+        <Text style={{ color: colors.icon, fontSize: 14 }}>
+          Loading related posts...
+        </Text> : (relatedPosts.length > 0 ? (
+        <View
+          style={{
+            paddingTop: 16,
+            borderTopWidth: 0.5,
+            borderTopColor: colors.icon + "30",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "600",
+              color: colors.text,
+              paddingHorizontal: 12,
+              paddingBottom: 12,
+            }}
+          >
+            You might also like
+          </Text>
+          <FlatList
+            horizontal
+            data={relatedPosts}
+            keyExtractor={(item) => item.post.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 12, gap: 10 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => router.push(`/post/${item.post.id}`)}
+                style={{ width: 140 }}
+              >
+                <Image
+                  source={{
+                    uri:
+                      item.post.images[0]?.thumbnailUri ||
+                      item.post.images[0]?.uri,
+                  }}
+                  style={{ width: 140, height: 140, borderRadius: 8 }}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: colors.text,
+                    marginTop: 6,
+                  }}
+                >
+                  {item.post.user.username}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 11,
+                    color: colors.icon,
+                    marginTop: 2,
+                  }}
+                >
+                  {item.reasons.slice(0, 2).join(" · ")}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+    ) : null)
+  )
+}
+
 const PostDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -42,6 +120,8 @@ const PostDetailScreen = () => {
   const [replyInfo, setReplyInfo] = useState<ReplyInfo | null>(null);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
+  const [_, startTransition] = useTransition();
+  const [showRelatedPosts, setShowRelatedPosts] = useState(false);
 
   useEffect(() => {
     const foundPost = findPostForDetails(id);
@@ -51,12 +131,14 @@ const PostDetailScreen = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+   startTransition(() => {
+      setShowRelatedPosts(true);
+    });
+  }, []);
+
   const hasNewComments = comments.length > prevCommentsLengthRef.current;
   prevCommentsLengthRef.current = comments.length;
-
-  const relatedPosts = useMemo(() => {
-    return post ? findRelatedPosts(post) : [];
-  }, [post]);
 
   const handleReply = useCallback((commentId: string, username: string) => {
     setReplyInfo({ commentId, username });
@@ -209,72 +291,7 @@ const PostDetailScreen = () => {
               </Text>
             </View>
           }
-          ListFooterComponent={
-            relatedPosts.length > 0 ? (
-              <View
-                style={{
-                  paddingTop: 16,
-                  borderTopWidth: 0.5,
-                  borderTopColor: colors.icon + "30",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: colors.text,
-                    paddingHorizontal: 12,
-                    paddingBottom: 12,
-                  }}
-                >
-                  You might also like
-                </Text>
-                <FlatList
-                  horizontal
-                  data={relatedPosts}
-                  keyExtractor={(item) => item.post.id}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: 12, gap: 10 }}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      onPress={() => router.push(`/post/${item.post.id}`)}
-                      style={{ width: 140 }}
-                    >
-                      <Image
-                        source={{
-                          uri:
-                            item.post.images[0]?.thumbnailUri ||
-                            item.post.images[0]?.uri,
-                        }}
-                        style={{ width: 140, height: 140, borderRadius: 8 }}
-                      />
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          fontSize: 12,
-                          fontWeight: "600",
-                          color: colors.text,
-                          marginTop: 6,
-                        }}
-                      >
-                        {item.post.user.username}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          fontSize: 11,
-                          color: colors.icon,
-                          marginTop: 2,
-                        }}
-                      >
-                        {item.reasons.slice(0, 2).join(" · ")}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-            ) : null
-          }
+          ListFooterComponent={showRelatedPosts && post ? <RelatedPosts post={post} /> : null}
         />
 
         {/* Reply indicator */}
